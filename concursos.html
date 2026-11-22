@@ -40,18 +40,23 @@ import { montarSequencia } from "./assets/sequencia.js";
 
 const { dados } = await iniciarPagina();
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const estudados = c => Object.values(dados.progresso[c.id] || {}).filter(b => (b & 0b111) !== 0).length;
+/* Considera as alterações do estudante (conteúdos excluídos ou adicionados) */
+function contagem(c) {
+  const ed = dados.edicoes[c.id] || {}, excl = new Set(ed.excluidos || []);
+  const total = c.assuntos - excl.size + (ed.adicionados || []).length;
+  const f = Object.entries(dados.progresso[c.id] || {}).filter(([id, b]) => !excl.has(id) && (b & 0b111) !== 0).length;
+  return { f, total };
+}
 
 document.getElementById("lista").innerHTML = CONCURSOS.map(c => {
-  const f = estudados(c), p = c.assuntos ? Math.round(f / c.assuntos * 100) : 0;
+  const { f, total } = contagem(c), p = total ? Math.round(f / total * 100) : 0;
   return `<a class="card-concurso" href="${esc(c.pagina)}">
     <div class="faixa"><span class="sigla">${esc(c.sigla)}</span><span class="ano">${esc(c.ano)}</span></div>
     <div class="corpo">
       <p class="cargo">${esc(c.cargo)}</p>
       <p class="orgao">${esc(c.orgao)}</p>
-      <p class="desc">${esc(c.descricao)}</p>
       ${c.prova ? (() => { const t = textoProva(c.prova); return `<p class="data-prova">Prova: <strong>${t.data}</strong> · ${t.resumo}</p>`; })() : ""}
-      <div class="meta">${c.materias} matérias · ${c.assuntos} assuntos · ${f} estudados (${p}%)
+      <div class="meta">${c.materias} matérias · ${total} assuntos · ${f} estudados (${p}%)
         <div class="prog" role="img" aria-label="${p}% estudado"><span style="width:${p}%"></span></div>
       </div>
     </div>
@@ -59,7 +64,7 @@ document.getElementById("lista").innerHTML = CONCURSOS.map(c => {
   </a>`;
 }).join("");
 
-montarSequencia(document.getElementById("sq"), dados);
+montarSequencia(document.getElementById("sq"), dados, CONCURSOS.filter(c => c.prova).map(c => ({ data: c.prova, nome: c.cargo })));
 </script>
 </body>
 </html>

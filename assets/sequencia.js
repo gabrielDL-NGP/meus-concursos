@@ -23,7 +23,10 @@ export function calcular(dias) {
   return { atual, melhor, total: marcados.length, primeiro: marcados[0] || null, estudouHoje: estudou(hojeISO(hoje)) };
 }
 
-export function montarSequencia(el, dados) {
+/* provas: [{ data: "AAAA-MM-DD", nome: "Oficial de Justiça" }] */
+export function montarSequencia(el, dados, provas = []) {
+  const porData = {};
+  for (const p of provas) (porData[p.data] = porData[p.data] || []).push(p.nome);
   const dias = dados.dias;
   const ref = new Date(); let ano = ref.getFullYear(), mes = ref.getMonth();
 
@@ -36,11 +39,14 @@ export function montarSequencia(el, dados) {
     for (let n = 1; n <= nDias; n++) {
       const iso = `${ano}-${String(mes + 1).padStart(2, "0")}-${String(n).padStart(2, "0")}`;
       const futuro = iso > hoje, fez = dias[iso] === true, perdeu = !fez && !futuro && iso >= inicio && iso < hoje;
-      const cls = fez ? "fez" : perdeu ? "perdeu" : futuro ? "futuro" : "";
-      const rot = `${n} de ${MESES[mes]}: ${fez ? "estudou" : perdeu ? "não estudou" : futuro ? "ainda não chegou" : "sem estudo marcado"}`;
+      const prova = porData[iso];
+      const cls = (fez ? "fez" : perdeu ? "perdeu" : futuro ? "futuro" : "") + (prova ? " prova" : "");
+      const rot = `${n} de ${MESES[mes]}: ` + (prova ? `dia da prova (${prova.join(", ")})` : fez ? "estudou" : perdeu ? "não estudou" : futuro ? "ainda não chegou" : "sem estudo marcado");
       cels += `<button type="button" class="sq-dia ${cls}${iso === hoje ? " hoje" : ""}" data-dia="${iso}" ${futuro ? "disabled" : ""} aria-pressed="${fez}" aria-label="${rot}" title="${rot}">${n}</button>`;
     }
-    const podeAvancar = new Date(ano, mes + 1, 1) <= new Date();
+    const noMesAtual = ano === ref.getFullYear() && mes === ref.getMonth();
+    const provasDoMes = Object.keys(porData).filter(iso => iso.startsWith(`${ano}-${String(mes + 1).padStart(2, "0")}`)).sort();
+    const avisoProva = provasDoMes.map(iso => `<p class="sq-aviso-prova"><strong>${iso.slice(8)}/${iso.slice(5, 7)} é o dia da prova</strong> · ${porData[iso].join(" e ")}</p>`).join("");
     el.innerHTML = `
       <div class="sq-topo">
         <div class="sq-fogo${s.atual ? " aceso" : ""}">${FOGO}</div>
@@ -50,15 +56,17 @@ export function montarSequencia(el, dados) {
       <div class="sq-stats"><span><strong>${s.melhor}</strong> melhor sequência</span><span><strong>${s.total}</strong> ${s.total === 1 ? "dia estudado" : "dias estudados"}</span></div>
       <div class="sq-nav">
         <button type="button" class="sq-seta" data-nav="-1" aria-label="Mês anterior">‹</button>
-        <span class="sq-mes">${MESES[mes]} ${ano}</span>
-        <button type="button" class="sq-seta" data-nav="1" aria-label="Próximo mês" ${podeAvancar ? "" : "disabled"}>›</button>
+        <span class="sq-mes">${MESES[mes]} ${ano}${noMesAtual ? "" : ' <button type="button" class="sq-hoje" data-hoje>Hoje</button>'}</span>
+        <button type="button" class="sq-seta" data-nav="1" aria-label="Próximo mês">›</button>
       </div>
       <div class="sq-grade">${cels}</div>
-      <div class="sq-leg"><span><i class="fez"></i>Estudou</span><span><i class="perdeu"></i>Não estudou</span></div>
+      ${avisoProva}
+      <div class="sq-leg"><span><i class="fez"></i>Estudou</span><span><i class="perdeu"></i>Não estudou</span>${provas.length ? '<span><i class="prova"></i>Dia da prova</span>' : ""}</div>
       <p class="sq-dica">O dia é marcado sozinho quando você marca um assunto. Toque num dia para corrigir.</p>`;
   }
 
   el.addEventListener("click", e => {
+    if (e.target.closest("[data-hoje]")) { ano = ref.getFullYear(); mes = ref.getMonth(); desenhar(); return; }
     const nav = e.target.closest("[data-nav]");
     if (nav) { mes += +nav.dataset.nav; if (mes < 0) { mes = 11; ano--; } if (mes > 11) { mes = 0; ano++; } desenhar(); return; }
     const b = e.target.closest("button[data-dia]");

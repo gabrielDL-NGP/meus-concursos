@@ -5,7 +5,7 @@ import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   updateProfile, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, FieldPath, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
@@ -135,6 +135,7 @@ async function carregarDados(user) {
   dadosAtuais = snap.exists() ? snap.data() : {};
   dadosAtuais.progresso = dadosAtuais.progresso || {};
   dadosAtuais.dias = dadosAtuais.dias || {};
+  dadosAtuais.edicoes = dadosAtuais.edicoes || {};
   if (!snap.exists() || !dadosAtuais.nome) {
     dadosAtuais.nome = user.displayName || (user.email || "").split("@")[0];
     setDoc(ref, { nome: dadosAtuais.nome, criado: serverTimestamp() }, { merge: true }).catch(() => {});
@@ -158,6 +159,27 @@ export function salvarProgresso(concursoId, estado) {
 }
 addEventListener("pagehide", gravarPendentes);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") gravarPendentes(); });
+
+/* Alterações do estudante no edital: { renomear: {id: {t, a}}, excluidos: [id], adicionados: [{id, d, t, a}] }.
+   Grava o objeto inteiro (substitui), para que exclusões de chaves também valham. */
+const edPendentes = {};
+let edTimer = null;
+function gravarEdicoesPendentes() {
+  clearTimeout(edTimer); edTimer = null;
+  for (const [cid, ed] of Object.entries(edPendentes)) {
+    delete edPendentes[cid];
+    updateDoc(ref, new FieldPath("edicoes", cid), ed)
+      .catch(() => aviso("Não consegui salvar a alteração do edital. Verifique a internet."));
+  }
+}
+export function salvarEdicoes(concursoId, ed) {
+  dadosAtuais.edicoes = dadosAtuais.edicoes || {};
+  dadosAtuais.edicoes[concursoId] = ed;
+  edPendentes[concursoId] = JSON.parse(JSON.stringify(ed));
+  clearTimeout(edTimer); edTimer = setTimeout(gravarEdicoesPendentes, 600);
+}
+addEventListener("pagehide", gravarEdicoesPendentes);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") gravarEdicoesPendentes(); });
 
 export function hojeISO(d = new Date()) {
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
