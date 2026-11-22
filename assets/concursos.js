@@ -32,6 +32,7 @@ window.CONCURSOS = [
     ano: 2026,
     materias: 11,
     assuntos: 207,
+    prova: "2027-03-07",
     pagina: "concursos/dpeam-analista-2026.html"
   }
 ];
