@@ -23,7 +23,7 @@
         Entrar com Google
       </button>
       <div class="msg" id="msg-google" role="alert" hidden></div>
-      <div class="ou">ou com usuário e senha</div>
+      <div class="ou">ou com e-mail e senha</div>
     </div>
 
     <div class="abas" role="tablist" style="margin-top:14px;border-top:1px solid var(--grade)">
@@ -32,21 +32,26 @@
     </div>
 
     <form class="f" id="form-entrar" role="tabpanel" aria-labelledby="aba-entrar" novalidate>
-      <label>Nome de usuário
-        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <label>E-mail
+        <input name="usuario" type="email" inputmode="email" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="nome@gmail.com" required>
       </label>
       <label>Senha
         <input name="senha" type="password" autocomplete="current-password" required>
       </label>
       <label class="ver-senha"><input type="checkbox" data-ver> Mostrar senha</label>
       <div class="msg" role="alert" hidden></div>
+      <div class="msg ok" role="status" hidden></div>
       <button class="btn" type="submit">Entrar</button>
+      <button class="link-btn" type="button" id="esqueci">Esqueci minha senha</button>
     </form>
 
     <form class="f" id="form-cad" role="tabpanel" aria-labelledby="aba-cad" novalidate hidden>
-      <label>Nome de usuário
-        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="40" required>
-        <span class="dica-campo">Pode ter letras, números e espaços. Ex.: gabriel ou Gabriel Dutra</span>
+      <label>Seu nome
+        <input name="nome" autocomplete="name" maxlength="40" required>
+      </label>
+      <label>E-mail
+        <input name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="nome@gmail.com" required>
+        <span class="dica-campo">Usado para entrar e para recuperar a senha</span>
       </label>
       <label>Senha
         <input name="senha" type="password" autocomplete="new-password" minlength="6" required>
@@ -64,7 +69,7 @@
 </main>
 
 <script type="module">
-import { usuarioAtual, entrar, cadastrar, entrarComGoogle, destinoSeguro, mensagemDeErro } from "./assets/app.js";
+import { usuarioAtual, entrar, cadastrar, entrarComGoogle, recuperarSenha, destinoSeguro, mensagemDeErro } from "./assets/app.js";
 
 const volta = new URLSearchParams(location.search).get("volta") || "concursos.html";
 const ir = () => location.replace(destinoSeguro(volta));
@@ -95,7 +100,13 @@ abas.entrar[1].addEventListener("submit", e => {
 abas.cad[1].addEventListener("submit", e => {
   e.preventDefault(); const f = e.target;
   if (f.senha.value !== f.senha2.value){ erro(f.querySelector(".msg"), "As duas senhas não são iguais."); return; }
-  enviar(f.querySelector("button[type=submit]"), f.querySelector(".msg"), () => cadastrar(f.usuario.value, f.senha.value));
+  enviar(f.querySelector("button[type=submit]"), f.querySelector(".msg"), () => cadastrar(f.nome.value, f.email.value, f.senha.value));
+});
+document.getElementById("esqueci").addEventListener("click", async () => {
+  const f = abas.entrar[1], msgErro = f.querySelector(".msg:not(.ok)"), msgOk = f.querySelector(".msg.ok");
+  erro(msgErro, ""); erro(msgOk, "");
+  try { const email = await recuperarSenha(f.usuario.value); erro(msgOk, `Se houver uma conta com ${email}, enviamos um link para criar uma nova senha. Confira também o spam.`); }
+  catch(e){ erro(msgErro, mensagemDeErro(e)); }
 });
 const g = document.getElementById("google");
 g.addEventListener("click", () => enviar(g, document.getElementById("msg-google"), entrarComGoogle));

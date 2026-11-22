@@ -50,13 +50,14 @@ document.getElementById("lista").innerHTML = CONCURSOS.map(c => {
       <p class="cargo">${esc(c.cargo)}</p>
       <p class="orgao">${esc(c.orgao)}</p>
       <p class="desc">${esc(c.descricao)}</p>
+      ${c.prova ? (() => { const t = textoProva(c.prova); return `<p class="data-prova">Prova: <strong>${t.data}</strong> · ${t.resumo}</p>`; })() : ""}
       <div class="meta">${c.materias} matérias · ${c.assuntos} assuntos · ${f} estudados (${p}%)
         <div class="prog" role="img" aria-label="${p}% estudado"><span style="width:${p}%"></span></div>
       </div>
     </div>
     <div class="ir">Abrir edital →</div>
   </a>`;
-}).join("") + `<div class="card-concurso breve"><div class="mais" aria-hidden="true">+</div><div>Novos concursos aparecerão aqui</div></div>`;
+}).join("");
 
 montarSequencia(document.getElementById("sq"), dados);
 </script>

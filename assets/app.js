@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
-  updateProfile, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut
+  updateProfile, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
@@ -29,11 +29,12 @@ function emailDe(usuario) {
 }
 
 const MENSAGENS = {
-  "auth/email-already-in-use": "Esse nome de usuário já está em uso. Escolha outro ou entre.",
-  "auth/invalid-credential": "Usuário ou senha incorretos.",
-  "auth/wrong-password": "Usuário ou senha incorretos.",
-  "auth/user-not-found": "Usuário ou senha incorretos.",
-  "auth/invalid-email": "Nome de usuário inválido. Use letras, números e espaços.",
+  "auth/email-already-in-use": "Esse e-mail já tem conta. Use a aba Entrar (ou “Esqueci minha senha”).",
+  "auth/invalid-credential": "E-mail ou senha incorretos.",
+  "auth/wrong-password": "E-mail ou senha incorretos.",
+  "auth/user-not-found": "E-mail ou senha incorretos.",
+  "auth/invalid-email": "E-mail inválido. Confira se digitou certo.",
+  "auth/missing-email": "Digite seu e-mail.",
   "auth/weak-password": "A senha precisa ter pelo menos 6 caracteres.",
   "auth/missing-password": "Digite a senha.",
   "auth/too-many-requests": "Muitas tentativas seguidas. Espere alguns minutos e tente de novo.",
@@ -48,11 +49,15 @@ export function mensagemDeErro(e) {
   return (e && MENSAGENS[e.code]) || "Não foi possível concluir. Tente de novo.";
 }
 
-export async function cadastrar(usuario, senha) {
-  const nome = String(usuario || "").trim();
-  if (nome.length > 40) throw erro("O nome de usuário pode ter no máximo 40 caracteres.");
+/* Cadastro com nome + e-mail real (permite recuperar a senha). */
+export async function cadastrar(nomeDigitado, email, senha) {
+  const nome = String(nomeDigitado || "").trim();
+  email = String(email || "").trim().toLowerCase();
+  if (nome.length < 2) throw erro("Digite seu nome.");
+  if (nome.length > 40) throw erro("O nome pode ter no máximo 40 caracteres.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw erro("Digite um e-mail válido, como nome@gmail.com.");
   if (String(senha || "").length < 6) throw erro("A senha precisa ter pelo menos 6 caracteres.");
-  const cred = await createUserWithEmailAndPassword(auth, emailDe(nome), senha);
+  const cred = await createUserWithEmailAndPassword(auth, email, senha);
   await updateProfile(cred.user, { displayName: nome });
   await setDoc(doc(db, "usuarios", cred.user.uid), { nome, criado: serverTimestamp() }, { merge: true });
   return cred.user;
@@ -61,6 +66,14 @@ export async function cadastrar(usuario, senha) {
 export async function entrar(usuario, senha) {
   if (!senha) throw erro("Digite a senha.");
   return (await signInWithEmailAndPassword(auth, emailDe(usuario), senha)).user;
+}
+
+export async function recuperarSenha(email) {
+  email = String(email || "").trim().toLowerCase();
+  if (!email) throw erro("Digite seu e-mail no campo acima e toque de novo em “Esqueci minha senha”.");
+  if (!email.includes("@")) throw erro("Contas criadas só com nome de usuário não têm recuperação de senha. Crie uma conta nova com e-mail.");
+  await sendPasswordResetEmail(auth, email);
+  return email;
 }
 
 export async function entrarComGoogle() {
