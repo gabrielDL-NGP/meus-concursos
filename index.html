@@ -5,11 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Entrar · Meus Concursos</title>
 <script src="assets/tema.js"></script>
-<script src="assets/auth.js"></script>
-<script>
-  // Já entrou? Vai direto para os concursos.
-  (function(){ var p = new URLSearchParams(location.search); if (Auth.usuario()) location.replace(Auth.destinoSeguro(p.get("volta") || "concursos.html")); })();
-</script>
 <link rel="stylesheet" href="assets/base.css">
 </head>
 <body class="login-pg">
@@ -21,7 +16,17 @@
 <main>
   <div class="caixa">
     <h1>Área do estudante</h1>
-    <div class="abas" role="tablist">
+
+    <div class="google-area">
+      <button class="btn-google" type="button" id="google">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Entrar com Google
+      </button>
+      <div class="msg" id="msg-google" role="alert" hidden></div>
+      <div class="ou">ou com usuário e senha</div>
+    </div>
+
+    <div class="abas" role="tablist" style="margin-top:14px;border-top:1px solid var(--grade)">
       <button type="button" role="tab" id="aba-entrar" aria-controls="form-entrar" aria-selected="true">Entrar</button>
       <button type="button" role="tab" id="aba-cad" aria-controls="form-cad" aria-selected="false">Criar conta</button>
     </div>
@@ -40,10 +45,12 @@
 
     <form class="f" id="form-cad" role="tabpanel" aria-labelledby="aba-cad" novalidate hidden>
       <label>Nome de usuário
-        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" required>
+        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="40" required>
+        <span class="dica-campo">Pode ter letras, números e espaços. Ex.: gabriel ou Gabriel Dutra</span>
       </label>
       <label>Senha
-        <input name="senha" type="password" autocomplete="new-password" required>
+        <input name="senha" type="password" autocomplete="new-password" minlength="6" required>
+        <span class="dica-campo">Mínimo de 6 caracteres</span>
       </label>
       <label>Repita a senha
         <input name="senha2" type="password" autocomplete="new-password" required>
@@ -52,43 +59,46 @@
       <div class="msg" role="alert" hidden></div>
       <button class="btn" type="submit">Criar conta e entrar</button>
     </form>
-    <p class="nota">A conta e o progresso ficam salvos neste navegador. Em outro aparelho, crie a conta lá também e use “Levar para outro aparelho” dentro do edital para copiar o progresso.</p>
+    <p class="nota">Sua conta e seu progresso ficam salvos na nuvem: entre no celular ou no computador e veja tudo igual.</p>
   </div>
 </main>
 
-<script>
+<script type="module">
+import { usuarioAtual, entrar, cadastrar, entrarComGoogle, destinoSeguro, mensagemDeErro } from "./assets/app.js";
+
+const volta = new URLSearchParams(location.search).get("volta") || "concursos.html";
+const ir = () => location.replace(destinoSeguro(volta));
+if (await usuarioAtual()) ir();
+
 const abas = { entrar: [document.getElementById("aba-entrar"), document.getElementById("form-entrar")], cad: [document.getElementById("aba-cad"), document.getElementById("form-cad")] };
 function mostra(qual){
-  for (const [k, [aba, form]] of Object.entries(abas)){
-    const on = k === qual; aba.setAttribute("aria-selected", on); form.hidden = !on;
-  }
+  for (const [k, [aba, form]] of Object.entries(abas)){ const on = k === qual; aba.setAttribute("aria-selected", on); form.hidden = !on; }
   abas[qual][1].querySelector("input").focus();
 }
 abas.entrar[0].addEventListener("click", () => mostra("entrar"));
 abas.cad[0].addEventListener("click", () => mostra("cad"));
-
 document.querySelectorAll("[data-ver]").forEach(cb => cb.addEventListener("change", () => {
   cb.closest("form").querySelectorAll('input[name^="senha"]').forEach(i => i.type = cb.checked ? "text" : "password");
 }));
 
-function erro(form, t){ const m = form.querySelector(".msg"); m.textContent = t; m.hidden = !t; }
-const volta = new URLSearchParams(location.search).get("volta") || "concursos.html";
-
-async function enviar(form, acao){
-  erro(form, "");
-  const btn = form.querySelector("button[type=submit]"); btn.disabled = true;
-  try { await acao(); location.replace(Auth.destinoSeguro(volta)); }
-  catch(e){ erro(form, e.amigavel ? e.message : "Não foi possível concluir. Tente de novo."); btn.disabled = false; }
+function erro(el, t){ el.textContent = t; el.hidden = !t; }
+async function enviar(btn, msgEl, acao){
+  erro(msgEl, ""); btn.disabled = true;
+  try { const u = await acao(); if (u) ir(); }
+  catch(e){ erro(msgEl, mensagemDeErro(e)); }
+  finally { btn.disabled = false; }
 }
 abas.entrar[1].addEventListener("submit", e => {
   e.preventDefault(); const f = e.target;
-  enviar(f, () => Auth.entrar(f.usuario.value, f.senha.value));
+  enviar(f.querySelector("button[type=submit]"), f.querySelector(".msg"), () => entrar(f.usuario.value, f.senha.value));
 });
 abas.cad[1].addEventListener("submit", e => {
   e.preventDefault(); const f = e.target;
-  if (f.senha.value !== f.senha2.value){ erro(f, "As duas senhas não são iguais."); return; }
-  enviar(f, () => Auth.cadastrar(f.usuario.value, f.senha.value));
+  if (f.senha.value !== f.senha2.value){ erro(f.querySelector(".msg"), "As duas senhas não são iguais."); return; }
+  enviar(f.querySelector("button[type=submit]"), f.querySelector(".msg"), () => cadastrar(f.usuario.value, f.senha.value));
 });
+const g = document.getElementById("google");
+g.addEventListener("click", () => enviar(g, document.getElementById("msg-google"), entrarComGoogle));
 </script>
 </body>
 </html>

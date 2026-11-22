@@ -84,4 +84,17 @@ a.card-concurso:hover{border-color:var(--azul)}
 .card-concurso .ir{border-top:1px solid var(--linha);padding:10px 14px;font-weight:700;color:var(--azul);font-size:14px}
 .card-concurso.breve{border-style:dashed;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--suave);min-height:200px}
 .card-concurso.breve .mais{font-size:30px;line-height:1;margin-bottom:6px}
+.hub{display:grid;grid-template-columns:1fr minmax(280px,330px);gap:20px;align-items:start}
+.card-seq{background:var(--papel);border:1px solid var(--grade);margin-top:22px}
+.card-seq h2{margin:0;background:var(--cab);color:var(--cab-tinta);font-size:13px;text-transform:uppercase;letter-spacing:.4px;text-align:center;padding:8px}
+.card-seq .sq{padding:14px}
+@media (max-width:820px){.hub{grid-template-columns:1fr}.card-seq{order:-1}}
+.ou{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--suave);text-transform:uppercase;letter-spacing:.4px}
+.ou::before,.ou::after{content:"";flex:1;border-top:1px solid var(--linha)}
+.btn-google{font:inherit;font-size:15px;font-weight:700;padding:10px;border:1px solid var(--grade);background:var(--papel);color:var(--tinta);border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.btn-google:hover{border-color:var(--azul)}
+.btn-google:focus-visible{outline:2px solid var(--azul);outline-offset:2px}
+.google-area{padding:18px 18px 0;display:flex;flex-direction:column;gap:14px}
+.google-area .msg{margin:0}
+.dica-campo{font-size:12px;color:var(--suave);text-transform:none;letter-spacing:0;font-weight:400}
 footer.rodape{font-size:12.5px;color:var(--suave);padding:24px 0 30px}
