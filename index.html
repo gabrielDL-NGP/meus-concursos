@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Meus Concursos</title>
+<script src="assets/tema.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+  // Já entrou? Vai direto para os concursos.
+  (function(){ var p = new URLSearchParams(location.search); if (Auth.usuario()) location.replace(Auth.destinoSeguro(p.get("volta") || "concursos.html")); })();
+</script>
+<link rel="stylesheet" href="assets/base.css">
+</head>
+<body class="login-pg">
+<header class="top"><div class="in">
+  <span class="marca">Meus Concursos</span>
+  <div class="acoes"><button class="ghost" type="button" data-tema-btn></button></div>
+</div></header>
+
+<main>
+  <div class="caixa">
+    <h1>Área do estudante</h1>
+    <div class="abas" role="tablist">
+      <button type="button" role="tab" id="aba-entrar" aria-controls="form-entrar" aria-selected="true">Entrar</button>
+      <button type="button" role="tab" id="aba-cad" aria-controls="form-cad" aria-selected="false">Criar conta</button>
+    </div>
+
+    <form class="f" id="form-entrar" role="tabpanel" aria-labelledby="aba-entrar" novalidate>
+      <label>Nome de usuário
+        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      </label>
+      <label>Senha
+        <input name="senha" type="password" autocomplete="current-password" required>
+      </label>
+      <label class="ver-senha"><input type="checkbox" data-ver> Mostrar senha</label>
+      <div class="msg" role="alert" hidden></div>
+      <button class="btn" type="submit">Entrar</button>
+    </form>
+
+    <form class="f" id="form-cad" role="tabpanel" aria-labelledby="aba-cad" novalidate hidden>
+      <label>Nome de usuário
+        <input name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" required>
+      </label>
+      <label>Senha
+        <input name="senha" type="password" autocomplete="new-password" required>
+      </label>
+      <label>Repita a senha
+        <input name="senha2" type="password" autocomplete="new-password" required>
+      </label>
+      <label class="ver-senha"><input type="checkbox" data-ver> Mostrar senha</label>
+      <div class="msg" role="alert" hidden></div>
+      <button class="btn" type="submit">Criar conta e entrar</button>
+    </form>
+    <p class="nota">A conta e o progresso ficam salvos neste navegador. Em outro aparelho, crie a conta lá também e use “Levar para outro aparelho” dentro do edital para copiar o progresso.</p>
+  </div>
+</main>
+
+<script>
+const abas = { entrar: [document.getElementById("aba-entrar"), document.getElementById("form-entrar")], cad: [document.getElementById("aba-cad"), document.getElementById("form-cad")] };
+function mostra(qual){
+  for (const [k, [aba, form]] of Object.entries(abas)){
+    const on = k === qual; aba.setAttribute("aria-selected", on); form.hidden = !on;
+  }
+  abas[qual][1].querySelector("input").focus();
+}
+abas.entrar[0].addEventListener("click", () => mostra("entrar"));
+abas.cad[0].addEventListener("click", () => mostra("cad"));
+
+document.querySelectorAll("[data-ver]").forEach(cb => cb.addEventListener("change", () => {
+  cb.closest("form").querySelectorAll('input[name^="senha"]').forEach(i => i.type = cb.checked ? "text" : "password");
+}));
+
+function erro(form, t){ const m = form.querySelector(".msg"); m.textContent = t; m.hidden = !t; }
+const volta = new URLSearchParams(location.search).get("volta") || "concursos.html";
+
+async function enviar(form, acao){
+  erro(form, "");
+  const btn = form.querySelector("button[type=submit]"); btn.disabled = true;
+  try { await acao(); location.replace(Auth.destinoSeguro(volta)); }
+  catch(e){ erro(form, e.amigavel ? e.message : "Não foi possível concluir. Tente de novo."); btn.disabled = false; }
+}
+abas.entrar[1].addEventListener("submit", e => {
+  e.preventDefault(); const f = e.target;
+  enviar(f, () => Auth.entrar(f.usuario.value, f.senha.value));
+});
+abas.cad[1].addEventListener("submit", e => {
+  e.preventDefault(); const f = e.target;
+  if (f.senha.value !== f.senha2.value){ erro(f, "As duas senhas não são iguais."); return; }
+  enviar(f, () => Auth.cadastrar(f.usuario.value, f.senha.value));
+});
+</script>
+</body>
+</html>

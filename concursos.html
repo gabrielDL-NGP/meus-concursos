@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meus Concursos</title>
+<script src="assets/tema.js"></script>
+<script src="assets/auth.js"></script>
+<script>Auth.exigir();</script>
+<script src="assets/concursos.js"></script>
+<link rel="stylesheet" href="assets/base.css">
+</head>
+<body>
+<header class="top"><div class="in">
+  <span class="marca">Meus Concursos</span>
+  <div class="acoes">
+    <span class="quem">Olá, <strong data-usuario></strong></span>
+    <button class="ghost" type="button" data-tema-btn></button>
+    <button class="ghost" type="button" data-sair>Sair</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+  <h1 class="titulo-pg">Escolha o concurso</h1>
+  <p class="sub-pg">Abra o edital verticalizado do concurso que você está estudando.</p>
+  <div class="grade-concursos" id="lista"></div>
+  <footer class="rodape">O progresso de cada concurso fica salvo separadamente para cada usuário, neste navegador.</footer>
+</main>
+
+<script>
+const u = Auth.usuario();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function progresso(c){
+  if (!u) return 0;
+  try {
+    const e = JSON.parse(localStorage.getItem(c.chaveProgresso + ":" + u.id) || "{}") || {};
+    return Object.values(e).filter(b => (b & 0b111) !== 0).length;
+  } catch(_) { return 0; }
+}
+document.getElementById("lista").innerHTML = CONCURSOS.map(c => {
+  const f = progresso(c), p = c.assuntos ? Math.round(f / c.assuntos * 100) : 0;
+  return `<a class="card-concurso" href="${esc(c.pagina)}">
+    <div class="faixa"><span class="sigla">${esc(c.sigla)}</span><span class="ano">${esc(c.ano)}</span></div>
+    <div class="corpo">
+      <p class="cargo">${esc(c.cargo)}</p>
+      <p class="orgao">${esc(c.orgao)}</p>
+      <p class="desc">${esc(c.descricao)}</p>
+      <div class="meta">${c.materias} matérias · ${c.assuntos} assuntos · ${f} estudados (${p}%)
+        <div class="prog" role="img" aria-label="${p}% estudado"><span style="width:${p}%"></span></div>
+      </div>
+    </div>
+    <div class="ir">Abrir edital →</div>
+  </a>`;
+}).join("") + `<div class="card-concurso breve"><div class="mais" aria-hidden="true">+</div><div>Novos concursos aparecerão aqui</div></div>`;
+</script>
+</body>
+</html>
