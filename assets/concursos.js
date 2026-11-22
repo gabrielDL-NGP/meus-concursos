@@ -23,6 +23,16 @@ window.CONCURSOS = [
     assuntos: 205,
     prova: "2027-03-14",
     pagina: "concursos/tjsp-escrevente-2026.html"
+  },
+  {
+    id: "dpeam-analista-2026",
+    sigla: "DPE-AM",
+    orgao: "Defensoria Pública do Estado do Amazonas",
+    cargo: "Analista Jurídico de Defensoria",
+    ano: 2026,
+    materias: 11,
+    assuntos: 207,
+    pagina: "concursos/dpeam-analista-2026.html"
   }
 ];
 
